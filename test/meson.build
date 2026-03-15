@@ -1,42 +1,42 @@
 # This file is part of libpvol.
 # SPDX-Identifier: LGPL-3.0-or-later
-#
-# libpvol is free software: you can redistribute it and/or modify it under
-# the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# libpvol is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License
-# along with libpvol.  If not, see <https://www.gnu.org/licenses/>.
 
-tests = [
-  'pvol',
-]
-
-test_srcs = files(
-  'coffeine.f90',
-  'lih.f90',
-  'supermol.f90',
-  'timer.f90',
-  'main.f90',
-)
-foreach t : tests
-  test_srcs += files('test_@0@.F90'.format(t.underscorify()))
-endforeach
-
-tester = executable(
-  'tester',
-  sources: test_srcs,
-  link_with: libpvol_lib,
-  dependencies: [testdrive_dep],
-  link_language: 'fortran',
+# ── Fortran test (test-drive) ──────────────────────────────────────────────────
+pvol_tester = executable(
+  'pvol-tester',
+  sources : files(
+    'coffeine.f90',
+    'lih.f90',
+    'supermol.f90',
+    'timer.f90',
+    'main.f90',
+    'test_pvol.F90',
+  ),
+  dependencies        : [libpvol_dep, testdrive_dep],
+  include_directories : inc_dirs,
+  link_language       : 'fortran',
 )
 
-foreach t : tests
-  test(t, tester, args: t, suite: 'unit')
-endforeach
+test('pvol/pvol', pvol_tester, args : ['pvol'], timeout : 120)
+
+# ── C API test ────────────────────────────────────────────────────────────────
+pvol_c_tester = executable(
+  'pvol-c-tester',
+  sources             : files('main.c'),
+  dependencies        : libpvol_dep,
+  include_directories : inc_dirs,
+)
+
+test('pvol/pvol-C-API', pvol_c_tester, timeout : 120)
+
+# ── C++ API test ──────────────────────────────────────────────────────────────
+pvol_cpp_tester = executable(
+  'pvol-cpp-tester',
+  sources             : files('main.cpp'),
+  dependencies        : libpvol_dep,
+  include_directories : inc_dirs,
+  # No link_language override: g++ drives the link to pull in libstdc++.
+  # libgfortran arrives transitively via libpvol_dep.
+)
+
+test('pvol/pvol-C++-API', pvol_cpp_tester, timeout : 120)

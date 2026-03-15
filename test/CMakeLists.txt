@@ -1,33 +1,23 @@
-###########################################################################
-# Fortran
-###########################################################################
+# This file is part of libpvol.
+# SPDX-Identifier: LGPL-3.0-or-later
 
-# Unit testing
-set(
-  tests
-  "pvol"
-)
-set(
-  test-srcs
-  "coffeine.f90"
-  "lih.f90"
-  "supermol.f90"
-  "timer.f90"
-  "main.f90"
-)
-foreach(t IN LISTS tests)
-  string(MAKE_C_IDENTIFIER ${t} t)
-  list(APPEND test-srcs "test_${t}.F90")
-endforeach()
+cmake_minimum_required(VERSION 3.17)
 
+###########################################################################
+# Fortran (test-drive)
+###########################################################################
 add_executable(
   "${PROJECT_NAME}-tester"
-  "${test-srcs}"
+  coffeine.f90
+  lih.f90
+  supermol.f90
+  timer.f90
+  main.f90
+  test_pvol.F90
 )
 target_include_directories(
   "${PROJECT_NAME}-tester"
-  PRIVATE
-  "${CMAKE_BINARY_DIR}/include"  # Path where the .mod files are located
+  PRIVATE "${CMAKE_BINARY_DIR}/include"
 )
 target_link_libraries(
   "${PROJECT_NAME}-tester"
@@ -35,84 +25,40 @@ target_link_libraries(
   "${PROJECT_NAME}-lib"
   "test-drive::test-drive"
 )
-
-# Ensure tester is built after the library
 add_dependencies("${PROJECT_NAME}-tester" "${PROJECT_NAME}-lib")
-
-foreach(t IN LISTS tests)
-  add_test("${PROJECT_NAME}/${t}" "${PROJECT_NAME}-tester" "${t}")
-endforeach()
-
-# Specify the minimum version of CMake
-cmake_minimum_required(VERSION 3.14)
-
+add_test("${PROJECT_NAME}/pvol" "${PROJECT_NAME}-tester" "pvol")
 
 ###########################################################################
-# C
+# C API
 ###########################################################################
-
-set(
-  tests
-  "pvol-C-API"
-)
-set(
-  test-srcs-c
-  "main.c"
-)
-
-add_executable(
-  "${PROJECT_NAME}-c-tester"
-  "${test-srcs-c}"
-)
+add_executable("${PROJECT_NAME}-c-tester" main.c)
 target_include_directories(
   "${PROJECT_NAME}-c-tester"
-  PRIVATE
-  "${CMAKE_BINARY_DIR}/include"  # Path where the .mod files are located
+  PRIVATE "${CMAKE_BINARY_DIR}/include"
 )
 target_link_libraries(
   "${PROJECT_NAME}-c-tester"
-  PRIVATE
-  "${PROJECT_NAME}-lib"
+  PRIVATE "${PROJECT_NAME}-lib"
 )
-
-
-foreach(t IN LISTS tests)
-  add_test("${PROJECT_NAME}/${t}" "${PROJECT_NAME}-c-tester" "${t}")
-endforeach()
-
+add_test("${PROJECT_NAME}/pvol-C-API" "${PROJECT_NAME}-c-tester")
 
 ###########################################################################
-# C++
+# C++ API
 ###########################################################################
-
-# Specify that C++ is used and set the C++ standard
-set(CMAKE_CXX_STANDARD 11)  # You can adjust this to 14, 17, or later as needed
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(
-  cpptest
-  "pvol-C++-API"
-)
-# Add the C++ tester
-set(test-srcs-cpp "main.cpp")
-
-add_executable(
+add_executable("${PROJECT_NAME}-cpp-tester" main.cpp)
+set_target_properties(
   "${PROJECT_NAME}-cpp-tester"
-  "${test-srcs-cpp}"
+  PROPERTIES LINKER_LANGUAGE CXX
 )
-set_target_properties("${PROJECT_NAME}-cpp-tester" PROPERTIES LINKER_LANGUAGE CXX)
-
 target_include_directories(
   "${PROJECT_NAME}-cpp-tester"
-  PRIVATE
-  "${CMAKE_BINARY_DIR}/include"  # Include path for headers
+  PRIVATE "${CMAKE_BINARY_DIR}/include"
 )
-
 target_link_libraries(
   "${PROJECT_NAME}-cpp-tester"
-  PRIVATE
-  "${PROJECT_NAME}-lib"
+  PRIVATE "${PROJECT_NAME}-lib"
 )
-
-add_test("${PROJECT_NAME}/${cpptest}" "${PROJECT_NAME}-cpp-tester")
-
+add_test("${PROJECT_NAME}/pvol-C++-API" "${PROJECT_NAME}-cpp-tester")

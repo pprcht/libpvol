@@ -18,3 +18,4 @@ bin/
 *.egg-info/
 _skbuild
 __pycache__
+*/.wraplock

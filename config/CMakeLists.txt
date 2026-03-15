@@ -13,83 +13,65 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with libpvol.  If not, see <https://www.gnu.org/licenses/>.
-# Set the module path for CMake includes
 
-#########################################################################################
-#########################################################################################
-
-# Add modules to the CMake build 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/modules")
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" PARENT_SCOPE)
 
-
-# specify module installation directory
 install(
-  DIRECTORY
-  "${CMAKE_CURRENT_SOURCE_DIR}/modules/"
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/modules/"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
 )
+
 set(
   module-dir
   "${PROJECT_NAME}/${CMAKE_Fortran_COMPILER_ID}-${CMAKE_Fortran_COMPILER_VERSION}"
 )
 set(module-dir "${module-dir}" PARENT_SCOPE)
 
+# Options
+option(WITH_OpenMP     "Enable OpenMP support"             TRUE)
+option(WITH_TESTS      "Enable unit tests"                 TRUE)
+option(build_exe       "Build the standalone app"          FALSE)
+option(PYTHON_BINDINGS "Create Python bindings"            FALSE)
+set(PYTHON_BINDINGS OFF CACHE BOOL "Disable python bindings by default" FORCE)
 
-# Custom options
-option(WITH_OpenMP "Enable OpenMP support"    TRUE)
-option(WITH_TESTS  "Enable test binary build" TRUE)
-option(build_exe   "Build an executable"      FALSE)
-# For python bindings install scikit-build and pybind11
-option(PYTHON_BINDINGS  "Create Python bindings"   TRUE)
-
-#########################################################################################
-#########################################################################################
-
-# Set build type as CMake does not provide defaults
+# Set build type default
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(
     CMAKE_BUILD_TYPE "RelWithDebInfo"
     CACHE STRING "Build type to be used."
     FORCE
   )
-  message(
-    STATUS
-    "Setting build type to '${CMAKE_BUILD_TYPE}' as none was specified."
-  )
+  message(STATUS "Setting build type to '${CMAKE_BUILD_TYPE}' as none was specified.")
 endif()
 
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+)
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+  VERSION "${PROJECT_VERSION}"
+  COMPATIBILITY SameMinorVersion
+)
+install(
+  FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+)
 
-### Options and defaults
-include("${CMAKE_CURRENT_SOURCE_DIR}/modules/pvol-utils.cmake")
-set(fortran_minimal_versions "GNU;7.5" "Intel;19.0")
-check_minimal_compiler_version("Fortran" "${fortran_minimal_versions}")
-
-if(NOT DEFINED "${PROJECT_NAME}-dependency-method")
-  set(
-    "${PROJECT_NAME}-dependency-method"
-    "subproject" "cmake" "pkgconf" "fetch"
-  )
-endif()
-
-#########################################################################################
-#########################################################################################
-
-# Compiler settings for GNU and Intel Fortran compilers
+# Compiler flags
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-  set(dialect "-g -O0 -fbacktrace -ffree-line-length-none -fbacktrace")
-  set(bounds "-fbounds-check -ffpe-trap=invalid,zero,overflow")
+  set(dialect "-g -O0 -fbacktrace -ffree-line-length-none")
+  set(bounds  "-fbounds-check -ffpe-trap=invalid,zero,overflow")
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
   set(dialect "-g -O2 -r8 -align array64byte -traceback")
-  set(bounds "-check all -fpe0")
+  set(bounds  "-check all -fpe0")
 else()
   message(FATAL_ERROR "Please use an Intel or GNU compiler!")
 endif()
-
-# Apply the compiler flags
 set(CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_DEBUG} ${bounds}" PARENT_SCOPE)
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${dialect}" PARENT_SCOPE)
-
-#########################################################################################
-#########################################################################################
-
+set(CMAKE_Fortran_FLAGS       "${CMAKE_Fortran_FLAGS} ${dialect}"      PARENT_SCOPE)
