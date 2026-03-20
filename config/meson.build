@@ -91,7 +91,7 @@ if static_build
     )
   elif fc_id == 'intel-llvm'
     add_project_link_arguments(
-      '-static-intel', '-static-openmp',
+      '-static-intel', '-qopenmp-link=static',
       language : 'fortran',
     )
   endif
